@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../Models/user/UserModel.js";
+import Therapist from "../Models/therapist/TherapistsModel.js";
+import Admin from "../Models/AdminModel.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -98,12 +100,28 @@ export const updateUser = async (req, res) => {
 
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) {
+    let account;
+
+    if (req.user.role === "admin") {
+      account = await Admin.findById(req.user.id).select("-password");
+    } else if (req.user.role === "therapist") {
+      account = await Therapist.findById(req.user.id).select("-password");
+    } else {
+      account = await User.findById(req.user.id).select("-password");
+    }
+
+    if (!account) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json({ user });
+
+    res.status(200).json({
+      role: req.user.role,
+      user: account,   // ✅ always "user"
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch user", error: err.message });
+    res.status(500).json({
+      message: "Failed to fetch user",
+      error: err.message,
+    });
   }
 };

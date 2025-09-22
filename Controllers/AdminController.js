@@ -20,18 +20,21 @@ export const loginAdmin = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: admin._id, role: "admin" },
-      process.env.JWT_KEY,
-      { expiresIn: "7d" }
-    );
+  const token = jwt.sign(
+  { id: admin._id, role: "admin" },
+  process.env.JWT_KEY,
+  { expiresIn: "7d" } );
 
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      role: "admin",
-      admin: { _id: admin._id, email: admin.email, name: admin.name },
-    });
+   res.json({
+  token,
+  role: "admin",
+  user: {  
+    _id: admin._id,
+    name: admin.name,
+    email: admin.email,
+  },
+});
+
   } catch (err) {
     console.error("Error logging in admin:", err.message);
     res.status(500).json({ message: "Failed to login admin", error: err.message });

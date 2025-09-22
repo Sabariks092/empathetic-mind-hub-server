@@ -16,26 +16,47 @@ const updateRequestSchema = new mongoose.Schema(
   { _id: true }
 );
 
+// 🔥 Certificate & License schemas
+const certificateSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    link: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const licenseSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    link: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
 const therapistSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phone: { type: String, required: true },
+    phone: { type: String, default: "" },
     area: { type: String, default: "" },
     city: { type: String, default: "" },
     state: { type: String, default: "" },
     country: { type: String, default: "" },
 
-    qualification: { type: String, required: true },
+    qualification: { type: String, default: "" },
 
+    // OLD (legacy)
     certifications: { type: [String], default: [] },
+    license: { type: String, default: "" },
+
+    // NEW structured objects
+    certificates: { type: [certificateSchema], default: [] },
+    licenses: { type: [licenseSchema], default: [] },
+
     specialization: { type: [String], default: [] },
-
     experience: { type: Number, default: 0 },
-    license: { type: String, required: true },
     profileLink: { type: String, default: "" },
-
     description: { type: String, default: "" },
     profileImage: { type: String, default: "" },
     charges: { type: String, default: "" },
@@ -53,14 +74,21 @@ const therapistSchema = new mongoose.Schema(
       enum: ["Online", "Offline", "Both"],
     },
 
-    // 🔥 Conditional fields
+    // Conditional fields
     onlineDetails: {
-      platform: { type: String }, // e.g. Zoom, Google Meet
-      link: { type: String }, // meeting link
+      platform: { type: String },
+      link: { type: String },
     },
     offlineDetails: {
       clinicName: { type: String },
       clinicAddress: { type: String },
+    },
+
+    // 🔥 NEW Location
+    location: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+      altitude: { type: Number, default: null },
     },
   },
   { timestamps: true }

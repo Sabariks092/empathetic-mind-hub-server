@@ -32,4 +32,4 @@ const journalSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Journal", journalSchema);
+export default mongoose.model("users-Journal", journalSchema);

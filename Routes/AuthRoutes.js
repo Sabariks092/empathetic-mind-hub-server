@@ -1,7 +1,7 @@
 // routes/authRoutes.js
 import express from "express";
-import {  signupTherapist, loginTherapist, getMe, updateTherapist, getAllTherapists, getTherapistById } from "../Controllers/TherapistAuthController.js";
-import { signupUser, loginUser } from "../Controllers/UserAuthController.js";
+import {  signupTherapist, loginTherapist, updateTherapist, getAllTherapists, getTherapistById } from "../Controllers/TherapistAuthController.js";
+import { signupUser, loginUser, getMe } from "../Controllers/UserAuthController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { updateUser } from "../Controllers/UserAuthController.js";
 

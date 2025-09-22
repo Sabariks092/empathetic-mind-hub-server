@@ -22,14 +22,7 @@ export const signupTherapist = async (req, res) => {
       name,
       email,
       password,
-      phone,
-      qualification,
-      certifications,
-      experience,
-      specialization,
-      license,
-      profileLink,
-      consultationMode,
+      
     } = req.body;
 
     console.log("Signup request for therapist:", email);
@@ -45,14 +38,6 @@ export const signupTherapist = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      phone,
-      qualification,
-      certifications,
-      experience,
-      specialization,
-      license,
-      profileLink,
-      consultationMode: consultationMode || 'Online',
       isApproved: false,
     });
 
@@ -96,7 +81,6 @@ export const loginTherapist = async (req, res) => {
 };
 
 // ----------------- UPDATE THERAPIST -----------------
-// ----------------- UPDATE THERAPIST -----------------
 export const updateTherapist = async (req, res) => {
   try {
     const { id } = req.user; // therapist ID from token
@@ -107,7 +91,7 @@ export const updateTherapist = async (req, res) => {
       return res.status(404).json({ message: "Therapist not found" });
     }
 
-    // Allowed fields to update (block sensitive fields)
+    // Block sensitive fields
     const disallowed = ["email", "password", "role", "isApproved", "_id"];
 
     const updateRequests = [];
@@ -115,9 +99,12 @@ export const updateTherapist = async (req, res) => {
     for (let key of Object.keys(updates)) {
       if (disallowed.includes(key)) continue;
 
-      // Special handling for consultation mode & nested fields
+      // 🔹 Consultation mode + nested fields
       if (key === "consultationMode") {
-        if (therapist.consultationMode !== updates.consultationMode && updates.consultationMode != null) {
+        if (
+          therapist.consultationMode !== updates.consultationMode &&
+          updates.consultationMode != null
+        ) {
           updateRequests.push({
             field: "consultationMode",
             oldValue: therapist.consultationMode,
@@ -127,11 +114,16 @@ export const updateTherapist = async (req, res) => {
           });
         }
 
-        // Online details
-        if ((updates.consultationMode === "Online" || updates.consultationMode === "Both") && updates.onlineDetails) {
+        if (
+          (updates.consultationMode === "Online" ||
+            updates.consultationMode === "Both") &&
+          updates.onlineDetails
+        ) {
           for (let subKey of Object.keys(updates.onlineDetails)) {
             if (
-              therapist.onlineDetails?.[subKey] !== updates.onlineDetails[subKey] && updates.onlineDetails[subKey] != null
+              therapist.onlineDetails?.[subKey] !==
+                updates.onlineDetails[subKey] &&
+              updates.onlineDetails[subKey] != null
             ) {
               updateRequests.push({
                 field: `onlineDetails.${subKey}`,
@@ -144,11 +136,16 @@ export const updateTherapist = async (req, res) => {
           }
         }
 
-        // Offline details
-        if ((updates.consultationMode === "Offline" || updates.consultationMode === "Both") && updates.offlineDetails) {
+        if (
+          (updates.consultationMode === "Offline" ||
+            updates.consultationMode === "Both") &&
+          updates.offlineDetails
+        ) {
           for (let subKey of Object.keys(updates.offlineDetails)) {
             if (
-              therapist.offlineDetails?.[subKey] !== updates.offlineDetails[subKey] && updates.offlineDetails[subKey] != null
+              therapist.offlineDetails?.[subKey] !==
+                updates.offlineDetails[subKey] &&
+              updates.offlineDetails[subKey] != null
             ) {
               updateRequests.push({
                 field: `offlineDetails.${subKey}`,
@@ -160,8 +157,54 @@ export const updateTherapist = async (req, res) => {
             }
           }
         }
-      } 
-      // Handle normal fields
+      }
+
+      // 🔹 Certificates (array of objects)
+      else if (key === "certificates") {
+        const oldData = JSON.stringify(therapist.certificates || []);
+        const newData = JSON.stringify(updates.certificates || []);
+        if (oldData !== newData) {
+          updateRequests.push({
+            field: "certificates",
+            oldValue: therapist.certificates,
+            newValue: updates.certificates,
+            status: "pending",
+            requestedAt: new Date(),
+          });
+        }
+      }
+
+      // 🔹 Licenses (array of objects)
+      else if (key === "licenses") {
+        const oldData = JSON.stringify(therapist.licenses || []);
+        const newData = JSON.stringify(updates.licenses || []);
+        if (oldData !== newData) {
+          updateRequests.push({
+            field: "licenses",
+            oldValue: therapist.licenses,
+            newValue: updates.licenses,
+            status: "pending",
+            requestedAt: new Date(),
+          });
+        }
+      }
+
+      // 🔹 Location object
+      else if (key === "location") {
+        const oldData = JSON.stringify(therapist.location || {});
+        const newData = JSON.stringify(updates.location || {});
+        if (oldData !== newData) {
+          updateRequests.push({
+            field: "location",
+            oldValue: therapist.location,
+            newValue: updates.location,
+            status: "pending",
+            requestedAt: new Date(),
+          });
+        }
+      }
+
+      // 🔹 Normal fields
       else if (therapist[key] !== updates[key] && updates[key] != null) {
         updateRequests.push({
           field: key,
@@ -177,7 +220,6 @@ export const updateTherapist = async (req, res) => {
       return res.status(400).json({ message: "No valid changes to update" });
     }
 
-    // Save all requests for admin approval
     therapist.updateRequests.push(...updateRequests);
     await therapist.save();
 
@@ -187,21 +229,9 @@ export const updateTherapist = async (req, res) => {
     });
   } catch (err) {
     console.error("Update error:", err.message);
-    res.status(500).json({ message: "Failed to update profile", error: err.message });
-  }
-};
-
-// ----------------- FETCH PROFILE -----------------
-export const getMe = async (req, res) => {
-  try {
-    const { id, role } = req.user;
-    const Model = role === "user" ? User : Therapist;
-    const profile = await Model.findById(id).select("-password");
-    if (!profile) return res.status(404).json({ message: "User not found" });
-
-    res.status(200).json({ user: profile, role });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch profile", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update profile", error: err.message });
   }
 };
 
