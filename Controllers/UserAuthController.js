@@ -125,3 +125,20 @@ export const getMe = async (req, res) => {
     });
   }
 };
+
+export const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "user not found" });
+    }
+
+    // Wrap in an object
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error("Fetch user by ID error:", err.message);
+    res.status(500).json({ message: "Failed to fetch user", error: err.message });
+  }
+};

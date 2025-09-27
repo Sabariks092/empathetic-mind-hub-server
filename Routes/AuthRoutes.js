@@ -1,7 +1,7 @@
 // routes/authRoutes.js
 import express from "express";
 import {  signupTherapist, loginTherapist, updateTherapist, getAllTherapists, getTherapistById } from "../Controllers/TherapistAuthController.js";
-import { signupUser, loginUser, getMe } from "../Controllers/UserAuthController.js";
+import { signupUser, loginUser, getMe, getUserById } from "../Controllers/UserAuthController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { updateUser } from "../Controllers/UserAuthController.js";
 
@@ -11,6 +11,7 @@ const router = express.Router();
 router.post("/signup/user", signupUser);
 router.post("/login/user", loginUser);
 router.put("/user/update/:id", authMiddleware, updateUser);
+router.get("/user/:id", getUserById)
 
 // ----------------- Therapist Routes -----------------
 router.post("/signup/therapist", signupTherapist);
