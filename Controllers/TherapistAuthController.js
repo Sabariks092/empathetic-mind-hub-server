@@ -87,153 +87,60 @@ export const updateTherapist = async (req, res) => {
     const updates = req.body;
 
     const therapist = await Therapist.findById(id);
-    if (!therapist) {
-      return res.status(404).json({ message: "Therapist not found" });
-    }
+    if (!therapist) return res.status(404).json({ message: "Therapist not found" });
 
-    // Block sensitive fields
-    const disallowed = ["email", "password", "role", "isApproved", "_id"];
+    // Fields that require admin approval
+    const adminApprovalFields = ["name", "email", "phone", "certificates", "licenses", "offlineDetails"];
+
+    // Fields that are completely blocked
+    const disallowed = ["password", "role", "isApproved", "_id"];
 
     const updateRequests = [];
 
     for (let key of Object.keys(updates)) {
       if (disallowed.includes(key)) continue;
 
-      // 🔹 Consultation mode + nested fields
-      if (key === "consultationMode") {
-        if (
-          therapist.consultationMode !== updates.consultationMode &&
-          updates.consultationMode != null
-        ) {
+      const newValue = updates[key];
+
+      if (adminApprovalFields.includes(key)) {
+        // Only create update request for admin approval
+        if (JSON.stringify(therapist[key]) !== JSON.stringify(newValue)) {
           updateRequests.push({
-            field: "consultationMode",
-            oldValue: therapist.consultationMode,
-            newValue: updates.consultationMode,
+            field: key,
+            oldValue: therapist[key],
+            newValue,
             status: "pending",
             requestedAt: new Date(),
           });
         }
-
-        if (
-          (updates.consultationMode === "Online" ||
-            updates.consultationMode === "Both") &&
-          updates.onlineDetails
-        ) {
-          for (let subKey of Object.keys(updates.onlineDetails)) {
-            if (
-              therapist.onlineDetails?.[subKey] !==
-                updates.onlineDetails[subKey] &&
-              updates.onlineDetails[subKey] != null
-            ) {
-              updateRequests.push({
-                field: `onlineDetails.${subKey}`,
-                oldValue: therapist.onlineDetails?.[subKey],
-                newValue: updates.onlineDetails[subKey],
-                status: "pending",
-                requestedAt: new Date(),
-              });
-            }
-          }
+      } else {
+        // Direct update for allowed fields
+        if (therapist[key] !== newValue && newValue != null) {
+          therapist[key] = newValue;
         }
-
-        if (
-          (updates.consultationMode === "Offline" ||
-            updates.consultationMode === "Both") &&
-          updates.offlineDetails
-        ) {
-          for (let subKey of Object.keys(updates.offlineDetails)) {
-            if (
-              therapist.offlineDetails?.[subKey] !==
-                updates.offlineDetails[subKey] &&
-              updates.offlineDetails[subKey] != null
-            ) {
-              updateRequests.push({
-                field: `offlineDetails.${subKey}`,
-                oldValue: therapist.offlineDetails?.[subKey],
-                newValue: updates.offlineDetails[subKey],
-                status: "pending",
-                requestedAt: new Date(),
-              });
-            }
-          }
-        }
-      }
-
-      // 🔹 Certificates (array of objects)
-      else if (key === "certificates") {
-        const oldData = JSON.stringify(therapist.certificates || []);
-        const newData = JSON.stringify(updates.certificates || []);
-        if (oldData !== newData) {
-          updateRequests.push({
-            field: "certificates",
-            oldValue: therapist.certificates,
-            newValue: updates.certificates,
-            status: "pending",
-            requestedAt: new Date(),
-          });
-        }
-      }
-
-      // 🔹 Licenses (array of objects)
-      else if (key === "licenses") {
-        const oldData = JSON.stringify(therapist.licenses || []);
-        const newData = JSON.stringify(updates.licenses || []);
-        if (oldData !== newData) {
-          updateRequests.push({
-            field: "licenses",
-            oldValue: therapist.licenses,
-            newValue: updates.licenses,
-            status: "pending",
-            requestedAt: new Date(),
-          });
-        }
-      }
-
-      // 🔹 Location object
-      else if (key === "location") {
-        const oldData = JSON.stringify(therapist.location || {});
-        const newData = JSON.stringify(updates.location || {});
-        if (oldData !== newData) {
-          updateRequests.push({
-            field: "location",
-            oldValue: therapist.location,
-            newValue: updates.location,
-            status: "pending",
-            requestedAt: new Date(),
-          });
-        }
-      }
-
-      // 🔹 Normal fields
-      else if (therapist[key] !== updates[key] && updates[key] != null) {
-        updateRequests.push({
-          field: key,
-          oldValue: therapist[key],
-          newValue: updates[key],
-          status: "pending",
-          requestedAt: new Date(),
-        });
       }
     }
 
-    if (updateRequests.length === 0) {
-      return res.status(400).json({ message: "No valid changes to update" });
+    // Save admin approval requests if any
+    if (updateRequests.length > 0) {
+      therapist.updateRequests.push(...updateRequests);
+      await therapist.save();
+      return res.status(200).json({
+        message: "Profile update requests submitted. Waiting for admin approval.",
+        pendingRequests: updateRequests,
+      });
     }
 
-    therapist.updateRequests.push(...updateRequests);
+    // Save direct updates
     await therapist.save();
+    res.status(200).json({ message: "Profile updated successfully" });
 
-    res.status(200).json({
-      message: "Profile update requests submitted. Waiting for admin approval.",
-      pendingRequests: updateRequests,
-    });
   } catch (err) {
     console.error("Update error:", err.message);
-    res
-      .status(500)
-      .json({ message: "Failed to update profile", error: err.message });
+    res.status(500).json({ message: "Failed to update profile", error: err.message });
   }
 };
+
 
 // ----------------- GET ALL THERAPISTS -----------------
 export const getAllTherapists = async (req, res) => {
@@ -252,17 +159,23 @@ export const getTherapistById = async (req, res) => {
     const { id } = req.params;
 
     const therapist = await Therapist.findById(id).select("-password");
-    if (!therapist) {
-      return res.status(404).json({ message: "Therapist not found" });
-    }
+    if (!therapist) return res.status(404).json({ message: "Therapist not found" });
 
-    // Wrap in an object
-    res.status(200).json({ therapist });
+    // Only send pending requests
+    const pendingRequests = (therapist.updateRequests || []).filter(req => req.status === "pending");
+
+    res.status(200).json({ 
+      therapist: {
+        ...therapist.toObject(),
+        updateRequests: pendingRequests
+      }
+    });
   } catch (err) {
     console.error("Fetch therapist by ID error:", err.message);
     res.status(500).json({ message: "Failed to fetch therapist", error: err.message });
   }
 };
+
 
 
 // ----------------- ADMIN: APPROVE THERAPIST UPDATE REQUEST -----------------
@@ -278,14 +191,24 @@ export const approveTherapistUpdate = async (req, res) => {
       return res.status(400).json({ message: "No pending request found" });
     }
 
-    // Update main field
+    // Apply approved value to the main therapist field
     therapist[request.field] = request.newValue;
+
+    // Mark the request as approved
     request.status = "approved";
     request.reviewedAt = new Date();
 
+    // Remove all other pending requests for the same field (cleaner)
+    therapist.updateRequests = therapist.updateRequests.filter(
+      (r) => r.status === "pending" && r.field !== request.field
+    );
+
     await therapist.save();
 
-    res.status(200).json({ message: "Update approved and applied", request });
+    res.status(200).json({
+      message: "Update approved and applied. Other pending requests for this field have been cleared.",
+      request,
+    });
   } catch (err) {
     res.status(500).json({ message: "Failed to approve update", error: err.message });
   }

@@ -70,29 +70,31 @@ export const fetchUnapprovedEvents = async (req, res) => {
 /**
  * Save event for a user
  */
-export const saveEvent = async (req, res) => {
+export const toggleSaveEvent = async (req, res) => {
   try {
     const { userId } = req.body;
     const { eventId } = req.params;
 
     if (!userId) return res.status(400).json({ message: "userId is required" });
 
+    // Check if event exists
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ message: "Event not found" });
 
-    const saved = new SavedEvent({ event: eventId, user: userId });
-    await saved.save();
-
-    res.status(201).json({ message: "Event saved", saved });
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({ message: "Event already saved" });
+    // Check if already saved
+    const savedDoc = await SavedEvent.findOne({ event: eventId, user: userId });
+    if (savedDoc) {
+      await savedDoc.deleteOne();
+      return res.json({ message: "Event unsaved", saved: false });
+    } else {
+      await new SavedEvent({ event: eventId, user: userId }).save();
+      return res.json({ message: "Event saved", saved: true });
     }
-    console.error("Save Event Error:", err);
+  } catch (err) {
+    console.error("Toggle Save Event Error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 /**
  * Fetch events hosted (created) by a user
  */

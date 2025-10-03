@@ -1,4 +1,5 @@
 import Therapist from "../Models/therapist/TherapistsModel.js";
+import User from '../Models/user/UserModel.js'
 import Admin from "../Models/AdminModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -185,3 +186,55 @@ export const rejectUpdateRequest = async (req, res) => {
     res.status(500).json({ message: "Failed to reject update request", error: err.message });
   }
 };
+
+// ----------------- DELETE THERAPIST BY ID -----------------
+export const deleteTherapistById = async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    // Find and delete therapist by ID
+    const therapist = await Therapist.findByIdAndDelete(therapistId);
+
+    if (!therapist) {
+      return res.status(404).json({ message: "Therapist not found" });
+    }
+
+    res.status(200).json({
+      message: "Therapist deleted successfully",
+      therapistId: therapist._id,
+    });
+  } catch (err) {
+    console.error("Error deleting therapist:", err.message);
+    res.status(500).json({
+      message: "Failed to delete therapist",
+      error: err.message,
+    });
+  }
+};
+
+// ----------------- DELETE USER BY ID -----------------
+export const deleteUserById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find and delete user by ID
+    const user = await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User deleted successfully",
+      userId: user._id,
+    });
+  } catch (err) {
+    console.error("Error deleting user:", err.message);
+    res.status(500).json({
+      message: "Failed to delete user",
+      error: err.message,
+    });
+  }
+};
+
+

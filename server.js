@@ -15,7 +15,8 @@ import therapistBlogRoutes from './Routes/TherapistBlogRoutes.js';
 import eventsRoutes from './Routes/EventRoutes.js';
 import guideRoutes from './Routes/GuidesRoutes.js';
 import communityPostRoutes from './Routes/CommunityPostRoutes.js';
-import chatRoutes from './Routes/ChatRoutes.js'; // ✅ new chat routes
+import chatRoutes from './Routes/ChatRoutes.js'; 
+import supportRoutes from './Routes/SupportRoutes.js'
 
 // Import models
 import Message from "./Models/chat/MessageModel.js";
@@ -39,7 +40,8 @@ app.use("/api/therapist-blogs", therapistBlogRoutes);
 app.use("/api/guides", guideRoutes);
 app.use("/api/events", eventsRoutes);
 app.use("/api/community-posts", communityPostRoutes);
-app.use("/api/chats", chatRoutes); // ✅ chat API routes
+app.use("/api/chats", chatRoutes);
+app.use("/api/support", supportRoutes);
 
 // Create HTTP server for Socket.IO
 const server = http.createServer(app);

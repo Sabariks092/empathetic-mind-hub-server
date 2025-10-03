@@ -16,7 +16,7 @@ router.get("/user/hosted/:userId",authMiddleware, eventCtrl.getHostedEventsByUse
 /**
  * SAVED EVENTS
  */
-router.post("/:eventId/save", authMiddleware, eventCtrl.saveEvent);
+router.post("/:eventId/save", authMiddleware, eventCtrl.toggleSaveEvent);
 router.get("/user/saved/:userId", authMiddleware, eventCtrl.getSavedEventsByUser);
 
 /**

@@ -142,3 +142,18 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch user", error: err.message });
   }
 };
+
+export const getAllUsers = async (req, res) => {
+  try {
+    // Only allow admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const users = await User.find().select("-password");
+    res.status(200).json({ users });
+  } catch (err) {
+    console.error("Fetch all users error:", err.message);
+    res.status(500).json({ message: "Failed to fetch users", error: err.message });
+  }
+};
