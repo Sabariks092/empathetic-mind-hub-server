@@ -18,9 +18,8 @@ const CommentSchema = new Schema(
 
 // Like Schema
 const LikeSchema = new Schema(
-  
-    {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     name: { type: String },
     email: { type: String },
     blogId: { type: Schema.Types.ObjectId, ref: "Therapists-Blog" },
@@ -42,13 +41,24 @@ const SaveSchema = new Schema(
   { _id: true }
 );
 
+// ✅ Reference Link Schema (NEW)
+const ReferenceLinkSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    link: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 // Blog Schema
 const BlogSchema = new Schema(
   {
     title: { type: String, required: true, trim: true },
     summary: { type: String, required: true },
     content: { type: String, required: true },
-    referenceLinks: { type: [String], default: [] },
+
+    // ✅ Updated to store array of objects
+    referenceLinks: { type: [ReferenceLinkSchema], default: [] },
 
     // Images
     bannerImage: { type: String },
@@ -80,6 +90,7 @@ const BlogSchema = new Schema(
   { timestamps: true }
 );
 
+// Indexes
 BlogSchema.index({ isApproved: 1, createdAt: -1 });
 BlogSchema.index({ "author.id": 1 });
 
