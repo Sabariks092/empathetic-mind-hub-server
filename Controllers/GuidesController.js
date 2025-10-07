@@ -6,10 +6,8 @@ function parseSteps(input) {
   if (!input) return [];
   return Array.isArray(input) ? input : JSON.parse(input);
 }
-
 export const createGuide = async (req, res) => {
   try {
-    const user = req.user;
     const {
       title,
       metaTitle,
@@ -21,17 +19,15 @@ export const createGuide = async (req, res) => {
       supportedImage1,
       supportedImage2,
       category,
-      tags, // ✅ Accept tags
+      tags,
+      author, // ✅ received from front-end
     } = req.body;
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title and description are required" });
     }
 
-    // Ensure steps is always an array
     const parsedSteps = Array.isArray(steps) ? steps : [];
-
-    // Ensure tags is always an array of strings
     const parsedTags = Array.isArray(tags) ? tags.map(String) : [];
 
     const guide = new Guide({
@@ -45,8 +41,8 @@ export const createGuide = async (req, res) => {
       supportedImage1,
       supportedImage2,
       category,
-      tags: parsedTags, // ✅ Save tags
-      author: { id: user.id, name: user.name || "Therapist" },
+      tags: parsedTags,
+      author: { id: author?.id, name: author?.name || "Therapist" }, // ✅ Save author
       isApproved: false,
     });
 
@@ -57,6 +53,7 @@ export const createGuide = async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+
 
 
 // ------------------ FETCH ------------------

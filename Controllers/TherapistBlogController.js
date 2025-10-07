@@ -14,7 +14,6 @@ function parseReferenceLinks(input) {
 // ------------------ CREATE ------------------
 export const createBlog = async (req, res) => {
   try {
-    const user = req.user;
     const {
       title,
       summary,
@@ -24,20 +23,19 @@ export const createBlog = async (req, res) => {
       supportedImage1,
       supportedImage2,
       categories,
+      author, // ✅ get author from front-end
     } = req.body;
 
     if (!title || !summary || !content) {
       return res.status(400).json({ error: "Title, summary and content are required" });
     }
 
-    // ✅ Ensure proper reference link format
-    const formattedRefs =
-      Array.isArray(referenceLinks)
-        ? referenceLinks.map(ref => ({
-            title: ref.title?.trim(),
-            link: ref.link?.trim(),
-          }))
-        : [];
+    const formattedRefs = Array.isArray(referenceLinks)
+      ? referenceLinks.map(ref => ({
+          title: ref.title?.trim(),
+          link: ref.link?.trim(),
+        }))
+      : [];
 
     const blog = new Blog({
       title,
@@ -48,7 +46,10 @@ export const createBlog = async (req, res) => {
       supportedImage1,
       supportedImage2,
       categories: Array.isArray(categories) ? categories.slice(0, 5) : [],
-      author: { id: user.id, name: user.name || "Therapist" },
+      author: {
+        id: author?.id,
+        name: author?.name || "Therapist",
+      },
       isApproved: false,
     });
 
@@ -59,7 +60,6 @@ export const createBlog = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 // ------------------ FETCH ------------------
 export const getTherapistBlogs = async (req, res) => {
